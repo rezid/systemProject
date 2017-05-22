@@ -6,8 +6,8 @@ TARGET := bin/app.out
 SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -W -Wall -std=c99 -pedantic -D DEBUG
-LIB :=  -pthread -L lib -lrt
+CFLAGS := -W -Wall -std=gnu99 -pedantic `pkg-config gtk+-3.0 --cflags`
+LIB :=  -pthread -L lib -lrt `pkg-config gtk+-3.0 --libs`
 INC := -I include
 
 $(TARGET): $(OBJECTS)
@@ -24,10 +24,8 @@ clean:
 
 # Tests
 tester:
-	$(CC) $(CFLAGS) test/tester.cpp $(INC) $(LIB) -o bin/tester
-
-# Spikes
-ticket:
-	$(CC) $(CFLAGS) spikes/ticket.cpp $(INC) $(LIB) -o bin/ticket
+	$(CC) $(CFLAGS) test/julia.c $(INC) $(LIB) -o bin/tester
 
 .PHONY: clean
+
+

@@ -84,8 +84,8 @@ struct conduct *conduct_create(const char *name, size_t atomic_length, size_t gl
         perror("fstat(data_file)");
         return NULL;
     }
-    DEBUG_PRINT("(DEBUG)conduct file size: %d\n", conduct_file_status.st_size);
-    DEBUG_PRINT("(DEBUG)data file size: %d\n", data_file_status.st_size);
+    DEBUG_PRINT("(DEBUG)conduct file size: %zu\n", conduct_file_status.st_size);
+    DEBUG_PRINT("(DEBUG)data file size: %zu\n", data_file_status.st_size);
     DEBUG_PRINT("(DEBUG)done\n");
    
 
@@ -173,8 +173,8 @@ struct conduct *conduct_open(const char *name)
         perror("fstat(data_file)");
         return NULL;
     }
-    DEBUG_PRINT("(DEBUG)conduct file size: %d\n", conduct_file_status.st_size);
-    DEBUG_PRINT("(DEBUG)data file size: %d\n", data_file_status.st_size);
+    DEBUG_PRINT("(DEBUG)conduct file size: %zu\n", conduct_file_status.st_size);
+    DEBUG_PRINT("(DEBUG)data file size: %zu\n", data_file_status.st_size);
     DEBUG_PRINT("(DEBUG)done\n");
    
 
@@ -225,20 +225,19 @@ ssize_t conduct_write(struct conduct *c, const void *buf, size_t count)
 
     pthread_mutex_lock(&(element[0].mutex));
     
-    DEBUG_PRINT("---------------------Print mmap conduct information---------------------\n");
-    DEBUG_PRINT("(DEBUG)read offset is: %d\n", conduct_size[0].size);
-    DEBUG_PRINT("(DEBUG)write offset is: %d\n", conduct_size[1].size);
-    DEBUG_PRINT("(DEBUG)atomic length is: %d\n", conduct_size[2].size);
-    DEBUG_PRINT("(DEBUG)global length is: %d\n", conduct_size[3].size);
+    DEBUG_PRINT("---------------------(Write)Print mmap conduct information---------------------\n");
+    DEBUG_PRINT("(DEBUG)read offset is: %zu\n", conduct_size[0].size);
+    DEBUG_PRINT("(DEBUG)write offset is: %zu\n", conduct_size[1].size);
+    DEBUG_PRINT("(DEBUG)atomic length is: %zu\n", conduct_size[2].size);
+    DEBUG_PRINT("(DEBUG)global length is: %zu\n", conduct_size[3].size);
     DEBUG_PRINT("(DEBUG)eof is: %d\n", conduct_bool[0].value);
     DEBUG_PRINT("(DEBUG)isEmpty is: %d\n", conduct_bool[1].value);
-    DEBUG_PRINT("(DEBUG)conduct free space is: %d\n", get_conduct_space(c));
-    DEBUG_PRINT("(DEBUG)count: %d\n", count);
+    DEBUG_PRINT("(DEBUG)conduct free space is: %zu\n", get_conduct_space(c));
+    DEBUG_PRINT("(DEBUG)count: %zu\n", count);
     DEBUG_PRINT("(DEBUG)done\n");
     
-    //sleep(3);
+    sleep(0.25);
 
-    size_t space = get_conduct_space(c);
     size_t a = conduct_size[2].size;
     size_t return_value = 0;
 
@@ -255,10 +254,10 @@ ssize_t conduct_write(struct conduct *c, const void *buf, size_t count)
         }
 
         // writing bytes
-        for(int i = 0; i< count; ++i) {
+        for(unsigned int i = 0; i < count; ++i) {
             element[conduct_size[1].size + i].element = buff[i];
         }
-        conduct_size[1].size += count;
+        conduct_size[1].size = (conduct_size[1].size + count) % conduct_size[3].size;
         return_value = count;
         // Wakeup all
         pthread_cond_broadcast(&(element[0].cond_empty));    
@@ -275,10 +274,10 @@ ssize_t conduct_write(struct conduct *c, const void *buf, size_t count)
         }
 
         // writing bytes
-        for(int i = 0; i< get_conduct_space(c); ++i) {
+        for(unsigned int i = 0; i< get_conduct_space(c); ++i) {
             element[conduct_size[1].size + i].element = buff[i];
         }
-        conduct_size[1].size += get_conduct_space(c);
+        conduct_size[1].size = (conduct_size[1].size + get_conduct_space(c)) % conduct_size[3].size;
         return_value = get_conduct_space(c);
         // Wakeup all
         pthread_cond_broadcast(&(element[0].cond_empty)); 
@@ -302,25 +301,23 @@ ssize_t conduct_read(struct conduct *c, void *buf, size_t count)
     struct element_t * element = (struct element_t *) (c->data_map_ptr);
 
     // cast for array subscripting
-    char * buff = (const char *) buf;
+    char * buff = (char *) buf;
 
     pthread_mutex_lock(&(element[0].mutex));
     
-    DEBUG_PRINT("---------------------Print mmap conduct information---------------------\n");
-    DEBUG_PRINT("(DEBUG)read offset is: %d\n", conduct_size[0].size);
-    DEBUG_PRINT("(DEBUG)write offset is: %d\n", conduct_size[1].size);
-    DEBUG_PRINT("(DEBUG)atomic length is: %d\n", conduct_size[2].size);
-    DEBUG_PRINT("(DEBUG)global length is: %d\n", conduct_size[3].size);
+    DEBUG_PRINT("---------------------(Read)Print mmap conduct information---------------------\n");
+    DEBUG_PRINT("(DEBUG)read offset is: %zu\n", conduct_size[0].size);
+    DEBUG_PRINT("(DEBUG)write offset is: %zu\n", conduct_size[1].size);
+    DEBUG_PRINT("(DEBUG)atomic length is: %zu\n", conduct_size[2].size);
+    DEBUG_PRINT("(DEBUG)global length is: %zu\n", conduct_size[3].size);
     DEBUG_PRINT("(DEBUG)eof is: %d\n", conduct_bool[0].value);
     DEBUG_PRINT("(DEBUG)isEmpty is: %d\n", conduct_bool[1].value);
-    DEBUG_PRINT("(DEBUG)conduct free space is: %d\n", get_conduct_space(c));
-    DEBUG_PRINT("(DEBUG)count: %d\n", count);
+    DEBUG_PRINT("(DEBUG)conduct free space is: %zu\n", get_conduct_space(c));
+    DEBUG_PRINT("(DEBUG)count: %zu\n", count);
     DEBUG_PRINT("(DEBUG)done\n");
     
-    //sleep(3);
+    sleep(0.25);
 
-    size_t space = get_conduct_space(c);
-    size_t a = conduct_size[2].size;
     size_t return_value = 0;
 
     while(get_conduct_space(c) == conduct_size[3].size) {
@@ -333,10 +330,10 @@ ssize_t conduct_read(struct conduct *c, void *buf, size_t count)
 
     if (count <= conduct_size[3].size - get_conduct_space(c)) {
         // reading bytes
-        for(int i = 0; i< count; ++i) {
+        for(unsigned int i = 0; i< count; ++i) {
             buff[i] = element[conduct_size[0].size + i].element;
         }
-        conduct_size[0].size += count;
+        conduct_size[0].size = (conduct_size[0].size + count) % conduct_size[3].size;
         return_value = count;
         // Wakeup all
         pthread_cond_broadcast(&(element[0].cond_full));    
@@ -347,7 +344,7 @@ ssize_t conduct_read(struct conduct *c, void *buf, size_t count)
         for(int i = 0; i< number; ++i) {
              buff[i] = element[conduct_size[0].size + i].element;
         }
-        conduct_size[0].size += number;
+        conduct_size[0].size = (conduct_size[0].size + number) % conduct_size[3].size;
         return_value = number;
         // Wakeup all
         pthread_cond_broadcast(&(element[0].cond_full)); 
@@ -386,6 +383,8 @@ int create_file_name (const char *name, char * out_conduct_file_name, char * out
 
     snprintf(out_conduct_file_name, buffer_size , "./%s%s", name, first_extention);
     snprintf(out_data_file_name, buffer_size, "./%s%s", name, second_extention);
+
+    return 0;
 } 
 
 
@@ -396,8 +395,6 @@ void conduct_close(struct conduct *conduct)
         return;
    
     struct conduct_size_t * conduct_size = (struct conduct_size_t *) (conduct->conduct_map_ptr);
-    struct conduct_bool_t * conduct_bool = (struct conduct_bool_t *) (&conduct_size[4]);
-    struct element_t * element = (struct element_t *) (conduct->data_map_ptr);
 
     munmap(conduct->conduct_map_ptr, 4 * sizeof(struct conduct_size_t) + 2 * sizeof(struct conduct_bool_t));
     munmap(conduct->data_map_ptr, conduct_size[3].size * sizeof(struct element_t));
@@ -417,7 +414,6 @@ size_t get_conduct_space(struct conduct *c)
     bool data_isEmpty = conduct_bool[1].value;
     size_t read_offset = conduct_size[0].size;
     size_t write_offset = conduct_size[1].size;
-    size_t atomic_length = conduct_size[2].size;
     size_t global_length = conduct_size[3].size;
 
     if (read_offset == write_offset) {
@@ -452,31 +448,31 @@ ssize_t initialize_header_information(int conduct_fd, size_t a, size_t real_glob
     DEBUG_PRINT("(DEBUG)done\n");
 
     DEBUG_PRINT("------Writing header information to file------\n");
-    size_t return_value;
+    ssize_t return_value;
     return_value = write(conduct_fd, &read_offset, sizeof(read_offset));
     if (return_value == -1){
         perror("write(read_offset)");
         return -1;
     }
-    DEBUG_PRINT("(DEBUG)write 'read_offset': %d\n", read_offset.size);
+    DEBUG_PRINT("(DEBUG)write 'read_offset': %zu\n", read_offset.size);
     return_value = write(conduct_fd, &write_offset, sizeof(write_offset));
     if (return_value == -1){
         perror("write(write_offset)");
         return -1;
     }
-    DEBUG_PRINT("(DEBUG)write 'write_offset': %d\n", write_offset.size);
+    DEBUG_PRINT("(DEBUG)write 'write_offset': %zu\n", write_offset.size);
     return_value = write(conduct_fd, &atomic_length, sizeof(atomic_length));
     if (return_value == -1){
         perror("write(atomic_length)");
         return -1;
     }
-    DEBUG_PRINT("(DEBUG)write 'atomic_length': %d\n", atomic_length.size);
+    DEBUG_PRINT("(DEBUG)write 'atomic_length': %zu\n", atomic_length.size);
     return_value = write(conduct_fd, &global_length, sizeof(global_length));
     if (return_value == -1){
         perror("write(global_length)");
         return -1;
     }
-    DEBUG_PRINT("(DEBUG)write 'global_length: %d\n", global_length.size);
+    DEBUG_PRINT("(DEBUG)write 'global_length: %zu\n", global_length.size);
     return_value = write(conduct_fd, &eof_insered, sizeof(eof_insered));
     if (return_value == -1){
         perror("write(eof_insered)");
@@ -497,7 +493,7 @@ ssize_t initialize_data_file(int data_fd, size_t real_global_length)
 {
     DEBUG_PRINT("------Create mutex and condition varriable------\n");
     int err;
-    for(int i = 0; i < real_global_length; ++i) {
+    for(unsigned int i = 0; i < real_global_length; ++i) {
         pthread_mutexattr_t mutex_attr;
         pthread_condattr_t cond_attr;
         err = pthread_mutexattr_init(&mutex_attr); if (err) return -1;
@@ -508,7 +504,7 @@ ssize_t initialize_data_file(int data_fd, size_t real_global_length)
         err = pthread_mutex_init(&(element.mutex), &mutex_attr); if (err) return -1;
         err = pthread_cond_init(&(element.cond_empty), &cond_attr); if (err) return -1;
         err = pthread_cond_init(&(element.cond_full), &cond_attr); if (err) return -1;
-        size_t return_value;
+        ssize_t return_value;
         return_value = write(data_fd, &element, sizeof(element));
         if (return_value == -1){
             perror("write(elements)");

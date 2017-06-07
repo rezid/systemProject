@@ -489,11 +489,14 @@ ssize_t initialize_header_information(char* conduct_map_ptr, size_t a, size_t re
     DEBUG_PRINT("------Create header information------\n");
     int err;
     pthread_mutexattr_t mutex_attr;
-    pthread_condattr_t cond_attr;
+    pthread_condattr_t cond_attr1;
+    pthread_condattr_t cond_attr2;
     err = pthread_mutexattr_init(&mutex_attr); if (err) return -1;
-    err = pthread_condattr_init(&cond_attr); if (err) return -1;
+    err = pthread_condattr_init(&cond_attr1); if (err) return -1;
+    err = pthread_condattr_init(&cond_attr2); if (err) return -1;
     err = pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED); if (err) return -1;
-    err = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED); if (err) return -1;
+    err = pthread_condattr_setpshared(&cond_attr1, PTHREAD_PROCESS_SHARED); if (err) return -1;
+    err = pthread_condattr_setpshared(&cond_attr2, PTHREAD_PROCESS_SHARED); if (err) return -1;
 
     size_t read_offset = 1;
     size_t write_offset = 1;
@@ -504,8 +507,8 @@ ssize_t initialize_header_information(char* conduct_map_ptr, size_t a, size_t re
     struct sync_t conduct_struct;
 
     err = pthread_mutex_init(&(conduct_struct.mutex), &mutex_attr); if (err) return -1;
-    err = pthread_cond_init(&(conduct_struct.cond_empty), &cond_attr); if (err) return -1;
-    err = pthread_cond_init(&(conduct_struct.cond_full), &cond_attr); if (err) return -1;
+    err = pthread_cond_init(&(conduct_struct.cond_empty), &cond_attr1); if (err) return -1;
+    err = pthread_cond_init(&(conduct_struct.cond_full), &cond_attr2); if (err) return -1;
  
     DEBUG_PRINT("(DEBUG)done\n");
 

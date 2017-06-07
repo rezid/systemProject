@@ -281,14 +281,14 @@ int main(int argc, char **argv)
     canvas = gtk_drawing_area_new();
     gtk_container_add(GTK_CONTAINER(window), canvas);
 
-    cons.one = conduct_create("temp1", sizeof(struct julia_request),
+    cons.one = conduct_create(NULL, sizeof(struct julia_request),
                               QSIZE * sizeof(struct julia_request));
     if(cons.one == NULL) {
         perror("conduct_create");
         exit(1);
     }
 
-    cons.two = conduct_create("temp2", sizeof(struct julia_reply),
+    cons.two = conduct_create(NULL, sizeof(struct julia_reply),
                               QSIZE * sizeof(struct julia_reply));
 
     if(cons.two == NULL) {

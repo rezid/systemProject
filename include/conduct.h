@@ -14,10 +14,10 @@
 
 struct conduct
 {
-    int conduct_fd; // conduct header information file
-    int data_fd;    // conduct data file
+    bool is_named;
+    char *name;
     char *conduct_map_ptr;
-    char *data_map_ptr;
+    char *data_map_ptr;    
 };
 
 extern struct conduct *conduct_create(const char *name, size_t a, size_t c);
@@ -33,10 +33,11 @@ void conduct_destroy(struct conduct *conduct);
 
 // helper function
 int create_file_name (const char *name, char * out_conduct_file_name, char * out_data_file_name);
-ssize_t initialize_header_information(int conduct_fd, size_t atomic_length, size_t real_global_length);
 size_t get_conduct_space(struct conduct *c);
 
-ssize_t initialize_data_file(int data_fd, size_t real_global_length);
+ssize_t initialize_header_information(char* conduct_map_ptr, size_t atomic_length, size_t real_global_length);
+ssize_t initialize_data_file(char* data_map_ptr, size_t real_global_length);
+
 size_t get_read_offset(char *conduct_map_ptr);
 size_t get_write_offset(char *conduct_map_ptr);
 size_t get_atomic_length(char *conduct_map_ptr);

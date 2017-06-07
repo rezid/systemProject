@@ -30,102 +30,131 @@ const size_t buffer_size = 1024;
 
 struct conduct *conduct_create(const char *name, size_t atomic_length, size_t global_length)
 {
+    char *conduct_map_ptr, *data_map_ptr;
+    size_t conduct_file_size = sizeof(struct conduct_size_t) * 4 + 2 * sizeof(struct conduct_bool_t);
+    size_t data_file_size = global_length * sizeof(struct element_t);
+    
+    struct conduct * out = malloc(sizeof(struct conduct));
+    
+    
     // Error
-    if (name == NULL)
-        return NULL;
     if (global_length < atomic_length)
         return NULL;
 
-    // create the path(s) files name
-    DEBUG_PRINT("---------------------Create the path(s) files name---------------------\n");
-    char path_conduct_file[buffer_size], path_data_file[buffer_size];
-    if (create_file_name(name, path_conduct_file, path_data_file) == -1){
-        perror("create_file_name");
-        return NULL;
-    }
-    DEBUG_PRINT("(DEBUG)The conduct file name is: %s\n", path_conduct_file);
-    DEBUG_PRINT("(DEBUG)The data file name is: %s\n", path_data_file);
-    DEBUG_PRINT("(DEBUG)done\n");
+    if (name != NULL) {
+        DEBUG_PRINT("---------------------Create the path(s) files name---------------------\n");
+        char path_conduct_file[buffer_size], path_data_file[buffer_size];
+        if (create_file_name(name, path_conduct_file, path_data_file) == -1){
+            perror("create_file_name");
+            return NULL;
+        }
+        DEBUG_PRINT("(DEBUG)The conduct file name is: %s\n", path_conduct_file);
+        DEBUG_PRINT("(DEBUG)The data file name is: %s\n", path_data_file);
+        DEBUG_PRINT("(DEBUG)done\n");
 
-    // create files
-    DEBUG_PRINT("---------------------Create files---------------------\n");
-    int conduct_fd = open (path_conduct_file, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-    if (conduct_fd == -1){
-        perror("open(conduct_file)");
-        return NULL;
-    }
-    int data_fd = open (path_data_file, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-    if (data_fd == -1){
-        perror("open(data_file)");
-        return NULL;
-    }
-    DEBUG_PRINT("(DEBUG)done\n");
+        // delete files
+        remove(path_conduct_file);
+        remove(path_data_file);
 
-    // set the files size
-    DEBUG_PRINT("---------------------Set the files size---------------------\n");
-    if (ftruncate(conduct_fd, sizeof(struct conduct_size_t) * 4 + 2 * sizeof(struct conduct_bool_t)) == -1) {
-        perror("ftruncate(conduct_file)");
-        return NULL;
-    }
-    if (ftruncate(data_fd, global_length * sizeof(struct element_t)) == -1) {
-        perror("ftruncate(data_file)");
-        return NULL;
-    }
-    DEBUG_PRINT("(DEBUG)done\n");
+        // create files
+        DEBUG_PRINT("---------------------Create files---------------------\n");
+        int conduct_fd = open (path_conduct_file, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+        if (conduct_fd == -1){
+            perror("open(conduct_file)");
+            return NULL;
+        }
+        int data_fd = open (path_data_file, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+        if (data_fd == -1){
+            perror("open(data_file)");
+            return NULL;
+        }
+        DEBUG_PRINT("(DEBUG)done\n");
 
-    // get files status
-    DEBUG_PRINT("---------------------Get files status---------------------\n"); 
-    struct stat conduct_file_status, data_file_status;
-    if (fstat(conduct_fd, &conduct_file_status) == -1){
-        perror("fstat(conduct_file)");
-        return NULL;
-    }
-    if (fstat(data_fd, &data_file_status) == -1){
-        perror("fstat(data_file)");
-        return NULL;
-    }
-    DEBUG_PRINT("(DEBUG)conduct file size: %zu\n", conduct_file_status.st_size);
-    DEBUG_PRINT("(DEBUG)data file size: %zu\n", data_file_status.st_size);
-    DEBUG_PRINT("(DEBUG)done\n");
-   
+        // set the files size
+        DEBUG_PRINT("---------------------Set the files size---------------------\n");
+        if (ftruncate(conduct_fd, conduct_file_size) == -1) {
+            perror("ftruncate(conduct_file)");
+            return NULL;
+        }
+        if (ftruncate(data_fd, data_file_size) == -1) {
+            perror("ftruncate(data_file)");
+            return NULL;
+        }
+        DEBUG_PRINT("(DEBUG)done\n");
 
-    // map files to memory
-     DEBUG_PRINT("---------------------Map files to memory---------------------\n");
-    char *conduct_map_ptr, *data_map_ptr;
-    conduct_map_ptr = mmap(0, conduct_file_status.st_size, PROT_WRITE, MAP_SHARED, conduct_fd, 0);
-    if (conduct_map_ptr == MAP_FAILED){
-        perror("mmap(conduct_file)");
-        return NULL;
-    }
-    data_map_ptr = mmap(0, data_file_status.st_size, PROT_WRITE, MAP_SHARED, data_fd, 0);
-    if (data_map_ptr == MAP_FAILED){
-        perror("mmap(data_file)");
-        return NULL;
-    }
-    DEBUG_PRINT("(DEBUG)done\n");
+        // get files status
+        DEBUG_PRINT("---------------------Get files status---------------------\n"); 
+        struct stat conduct_file_status, data_file_status;
+        if (fstat(conduct_fd, &conduct_file_status) == -1){
+            perror("fstat(conduct_file)");
+            return NULL;
+        }
+        if (fstat(data_fd, &data_file_status) == -1){
+            perror("fstat(data_file)");
+            return NULL;
+        }
+        DEBUG_PRINT("(DEBUG)conduct file size: %zu\n", conduct_file_status.st_size);
+        DEBUG_PRINT("(DEBUG)data file size: %zu\n", data_file_status.st_size);
+        DEBUG_PRINT("(DEBUG)done\n");
+    
+        // map files to memory
+        DEBUG_PRINT("---------------------Map files to memory---------------------\n");
+        conduct_map_ptr = mmap(0, conduct_file_status.st_size, PROT_WRITE, MAP_SHARED, conduct_fd, 0);
+        if (conduct_map_ptr == MAP_FAILED){
+            perror("mmap(conduct_file)");
+            return NULL;
+        }
+        data_map_ptr = mmap(0, data_file_status.st_size, PROT_WRITE, MAP_SHARED, data_fd, 0);
+        if (data_map_ptr == MAP_FAILED){
+            perror("mmap(data_file)");
+            return NULL;
+        }
+        DEBUG_PRINT("(DEBUG)done\n");
 
-    // write header information to conduct file
-    if (initialize_header_information(conduct_fd, atomic_length, data_file_status.st_size / sizeof(struct element_t)) == -1){
+        // close the files
+        close(conduct_fd);
+        close(data_fd);
+        DEBUG_PRINT("---------------------close the files---------------------\n");
+        DEBUG_PRINT("(DEBUG)done\n");
+
+        // set the conduct name
+        out->is_named = true;
+        out->name = name;
+    }
+    else {
+        // Anonymous Mapping to memory
+        DEBUG_PRINT("---------------------Anonymous Mapping to memory---------------------\n");
+        conduct_map_ptr = mmap(0, conduct_file_size, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        if (conduct_map_ptr == MAP_FAILED){
+            perror("mmap(conduct_file)");
+            return NULL;
+        }
+        data_map_ptr = mmap(0, data_file_size, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        if (data_map_ptr == MAP_FAILED){
+            perror("mmap(data_file)");
+            return NULL;
+        }
+        DEBUG_PRINT("(DEBUG)done\n");
+
+        // set the conduct name
+        out->is_named = false;
+        out->name = NULL;
+    }
+
+    // write header information to the mapped conduct file
+    if (initialize_header_information(conduct_map_ptr, atomic_length, data_file_size / sizeof(struct element_t)) == -1){
         perror("initialize_header_information");
         return NULL;
     }
 
-    // initialize mutex and variable condition in data file
-    if (initialize_data_file(data_fd, data_file_status.st_size / sizeof(struct element_t)) == -1){
+    // initialize mutex and variable condition in mapped data file
+    if (initialize_data_file(data_map_ptr, data_file_size / sizeof(struct element_t)) == -1){
         perror("initialize_header_information");
         return NULL;
     }
 
-    // close the files
-    close(conduct_fd);
-    close(data_fd);
-    DEBUG_PRINT("---------------------close the files---------------------\n");
-    DEBUG_PRINT("(DEBUG)done\n");
 
     // return the conduct structure
-    struct conduct * out = malloc(sizeof(struct conduct));
-    out->conduct_fd = conduct_fd;
-    out->data_fd = data_fd;
     out->conduct_map_ptr = conduct_map_ptr;
     out->data_map_ptr = data_map_ptr;
     return out;
@@ -201,8 +230,8 @@ struct conduct *conduct_open(const char *name)
 
     // return the conduct structure
     struct conduct * out = malloc(sizeof(struct conduct));
-    out->conduct_fd = conduct_fd;
-    out->data_fd = data_fd;
+    out->is_named = true;
+    out->name = name;
     out->conduct_map_ptr = conduct_map_ptr;
     out->data_map_ptr = data_map_ptr;
     return out;
@@ -403,7 +432,20 @@ void conduct_close(struct conduct *conduct)
 void conduct_destroy(struct conduct *conduct)
 {
     conduct_close(conduct);
-    // TO DO : delete file
+
+    // create the path(s) files name
+    DEBUG_PRINT("---------------------Create the path(s) files name---------------------\n");
+    char path_conduct_file[buffer_size], path_data_file[buffer_size];
+    if (create_file_name(conduct->name, path_conduct_file, path_data_file) == -1){
+        perror("create_file_name");
+        return;
+    }
+    DEBUG_PRINT("(DEBUG)The conduct file name is: %s\n", path_conduct_file);
+    DEBUG_PRINT("(DEBUG)The data file name is: %s\n", path_data_file);
+    DEBUG_PRINT("(DEBUG)done\n");
+    
+    remove(path_conduct_file);
+    remove(path_data_file);
 }
 
 size_t get_conduct_space(struct conduct *c)
@@ -426,7 +468,7 @@ size_t get_conduct_space(struct conduct *c)
         return (global_length + (read_offset - write_offset))%global_length;
 }
 
-ssize_t initialize_header_information(int conduct_fd, size_t a, size_t real_global_length) 
+ssize_t initialize_header_information(char* conduct_map_ptr, size_t a, size_t real_global_length) 
 {
     DEBUG_PRINT("------Create header information------\n");
     int err;
@@ -447,51 +489,35 @@ ssize_t initialize_header_information(int conduct_fd, size_t a, size_t real_glob
     err = pthread_mutex_init(&(data_isEMpty.mutex), &mutex_attr); if (err) return -1;
     DEBUG_PRINT("(DEBUG)done\n");
 
-    DEBUG_PRINT("------Writing header information to file------\n");
-    ssize_t return_value;
-    return_value = write(conduct_fd, &read_offset, sizeof(read_offset));
-    if (return_value == -1){
-        perror("write(read_offset)");
-        return -1;
-    }
+    DEBUG_PRINT("------Writing header information to the mapped file------\n");
+    struct conduct_size_t * conduct_size = (struct conduct_size_t *) (conduct_map_ptr);
+    struct conduct_bool_t * conduct_bool = (struct conduct_bool_t *) (&conduct_size[4]);
+   
+    conduct_size[0] = read_offset;
     DEBUG_PRINT("(DEBUG)write 'read_offset': %zu\n", read_offset.size);
-    return_value = write(conduct_fd, &write_offset, sizeof(write_offset));
-    if (return_value == -1){
-        perror("write(write_offset)");
-        return -1;
-    }
+
+    conduct_size[1] = write_offset;
     DEBUG_PRINT("(DEBUG)write 'write_offset': %zu\n", write_offset.size);
-    return_value = write(conduct_fd, &atomic_length, sizeof(atomic_length));
-    if (return_value == -1){
-        perror("write(atomic_length)");
-        return -1;
-    }
+
+    conduct_size[2] = atomic_length;
     DEBUG_PRINT("(DEBUG)write 'atomic_length': %zu\n", atomic_length.size);
-    return_value = write(conduct_fd, &global_length, sizeof(global_length));
-    if (return_value == -1){
-        perror("write(global_length)");
-        return -1;
-    }
+
+    conduct_size[3] = global_length;
     DEBUG_PRINT("(DEBUG)write 'global_length: %zu\n", global_length.size);
-    return_value = write(conduct_fd, &eof_insered, sizeof(eof_insered));
-    if (return_value == -1){
-        perror("write(eof_insered)");
-        return -1;
-    }
+
+    conduct_bool[0] = eof_insered;
     DEBUG_PRINT("(DEBUG)write 'eof_insered': %d\n", eof_insered.value);
-    return_value = write(conduct_fd, &data_isEMpty, sizeof(data_isEMpty));
-    if (return_value == -1){
-        perror("write(data_isEMpty)");
-        return -1;
-    }
+
+    conduct_bool[1] = data_isEMpty;
     DEBUG_PRINT("(DEBUG)write 'data_isEMpty': %d\n", data_isEMpty.value);
     DEBUG_PRINT("(DEBUG)done\n");
     return 0;
 }
 
-ssize_t initialize_data_file(int data_fd, size_t real_global_length)
+ssize_t initialize_data_file(char* data_map_ptr, size_t real_global_length)
 {
     DEBUG_PRINT("------Create mutex and condition varriable------\n");
+    struct element_t * element_array = (struct element_t *) (data_map_ptr);
     int err;
     for(unsigned int i = 0; i < real_global_length; ++i) {
         pthread_mutexattr_t mutex_attr;
@@ -504,12 +530,8 @@ ssize_t initialize_data_file(int data_fd, size_t real_global_length)
         err = pthread_mutex_init(&(element.mutex), &mutex_attr); if (err) return -1;
         err = pthread_cond_init(&(element.cond_empty), &cond_attr); if (err) return -1;
         err = pthread_cond_init(&(element.cond_full), &cond_attr); if (err) return -1;
-        ssize_t return_value;
-        return_value = write(data_fd, &element, sizeof(element));
-        if (return_value == -1){
-            perror("write(elements)");
-            return -1;
-        }
+
+        element_array[i] = element;
     }
     DEBUG_PRINT("(DEBUG)done\n");
     return 0;

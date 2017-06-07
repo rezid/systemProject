@@ -6,6 +6,27 @@
 
 #include "conduct.h"
 
+#include <stddef.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h> 
+#include <fcntl.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <string.h>
+
+struct conduct
+{
+    bool is_named;
+    char *name;
+    char *conduct_map_ptr;
+    char *data_map_ptr;    
+};
 
 struct element_t {
     char element;
@@ -23,6 +44,17 @@ struct conduct_bool_t {
     bool value;
     pthread_mutex_t mutex;
 };
+
+int create_file_name (const char *name, char * out_conduct_file_name, char * out_data_file_name);
+size_t get_conduct_space(struct conduct *c);
+ssize_t initialize_header_information(char* conduct_map_ptr, size_t atomic_length, size_t real_global_length);
+ssize_t initialize_data_file(char* data_map_ptr, size_t real_global_length);
+size_t get_read_offset(char *conduct_map_ptr);
+size_t get_write_offset(char *conduct_map_ptr);
+size_t get_atomic_length(char *conduct_map_ptr);
+size_t get_global_length(char *conduct_map_ptr);
+bool get_eof_insered (char *conduct_map_ptr);
+bool get_data_isEMpty(char *conduct_map_ptr);
 
 const char * first_extention = ".conduct";
 const char * second_extention = ".dataConduct";
@@ -119,7 +151,8 @@ struct conduct *conduct_create(const char *name, size_t atomic_length, size_t gl
 
         // set the conduct name
         out->is_named = true;
-        out->name = name;
+        out->name = malloc(buffer_size * sizeof(char));
+        strcpy(out->name, name);
     }
     else {
         // Anonymous Mapping to memory
@@ -231,7 +264,8 @@ struct conduct *conduct_open(const char *name)
     // return the conduct structure
     struct conduct * out = malloc(sizeof(struct conduct));
     out->is_named = true;
-    out->name = name;
+    out->name = malloc(buffer_size * sizeof(char));
+    strcpy(out->name, name);
     out->conduct_map_ptr = conduct_map_ptr;
     out->data_map_ptr = data_map_ptr;
     return out;
@@ -432,6 +466,9 @@ void conduct_close(struct conduct *conduct)
 void conduct_destroy(struct conduct *conduct)
 {
     conduct_close(conduct);
+
+    if (!conduct->is_named)
+        return;
 
     // create the path(s) files name
     DEBUG_PRINT("---------------------Create the path(s) files name---------------------\n");

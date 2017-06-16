@@ -20,7 +20,7 @@ main()
 
     printf("Trivial...\n");
 
-    c = conduct_create(NULL, 16, 4096);
+    c = conduct_create(NULL, 0, 4096);
     if(c == NULL)
         abort();
     n = conduct_write(c, "toto", 4);

@@ -6,7 +6,7 @@ TARGET := bin/app.out
 SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -W -Wall -std=gnu99 -pedantic `pkg-config gtk+-3.0 --cflags`
+CFLAGS := -g -W -Wall -std=gnu99 -pedantic `pkg-config gtk+-3.0 --cflags`
 LIB :=  -pthread -L lib -lrt `pkg-config gtk+-3.0 --libs`
 INC := -I include
 

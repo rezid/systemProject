@@ -316,11 +316,16 @@ ssize_t conduct_write(struct conduct *c, const void *buf, size_t count)
         }
 
         // writing bytes
-        for(unsigned int i = 0; i< get_conduct_space(c); ++i) {
-            element[conduct_size[1] + i] = buff[i];
+        int x = get_conduct_space(c);
+        if (count < x)
+            x = count;
+
+        for(unsigned int i = 0; i< x; ++i) {
+            element[(conduct_size[1] + i) % conduct_size[3]] = buff[i] ;
         }
-        conduct_size[1] = (conduct_size[1] + get_conduct_space(c)) % conduct_size[3];
-        return_value = get_conduct_space(c);
+
+        conduct_size[1] = (conduct_size[1] + x) % conduct_size[3];
+        return_value = x;
         // Wakeup all
         pthread_cond_broadcast(&(conduct_sync->cond_empty)); 
     }
